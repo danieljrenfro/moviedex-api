@@ -4,13 +4,15 @@ const helmet = require('helmet');
 const cors = require('cors');
 const morgan = require('morgan');
 
-const movieData = require('./movieData.json')
+const movieData = require('./movieData.json');
 
 const app = express();
 
+const morganSetting = process.env.NODE_ENV === 'production' ? 'tiny' : 'common';
+
 app.use(helmet());
 app.use(cors());
-app.use(morgan('common'));
+app.use(morgan(morganSetting));
 
 function validateBearerToken(req, res, next) {
   const apiToken = process.env.API_TOKEN;
@@ -56,6 +58,20 @@ function handleGetMovies(req, res) {
   res.json(response);
 }
 
-app.get('/movie', handleGetMovies)
+app.get('/movie', handleGetMovies);
 
-app.listen(8000, () => console.log('Server is listening on port 8000'));
+app.use((error, req, res, next) => {
+  let response;
+  if (process.env.NODE_ENV === 'production') {
+    response = { error: { message: 'Server Error' } };
+  } else {
+    response = { error };
+  }
+  res
+    .status(500)
+    .json(response);
+});
+
+const PORT = process.env.PORT || 8000;
+
+app.listen(PORT);
